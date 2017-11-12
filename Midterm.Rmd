@@ -1,0 +1,162 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+1.1)  Refer to solution , but 
+`uncondintional mean is= 0`, if the intial value we assume to be zero , than its zero, if we assume that Xo=K , then it will be K.
+`Variance` would be t(sigma)^2.
+
+1.2) Plotted Below : 
+
+1.3) Expected value(y(t=5))|y(t=4) = Y(t=4)
+Variance : 4sigma^2 ( tsigma^2)
+
+1.4) Forecast can be done for a random walk , but in general that would be the last value , we observed and we can put certain confidence interval or width which will keep on increasing as per the time , because of the variance.
+We assume that random walk is nothing but the value observed before plus some noise addeed at the new time frame, so we can assume that the forecast will be nothing but the last value observed.
+
+
+
+```{r}
+set.seed(3)
+Xo=0
+w_t <-rnorm(100,0,1)
+for(i in 2:100){
+  X[i]<-X[i-1] + w_t[i]
+}
+
+plot(X,type="l",col="magenta",main="Random Walk simulation")
+
+
+
+```
+```{r}
+U<-mean(X[1]+X[2]+X[3]+X[4])
+a<-rbind(X[1],X[2],X[3],X[4])
+a
+var(a)
+```
+
+
+#Question : 2 
+
+2.1 ) yes the function is stationary in mean, 
+with a constant mean of `(3/(1+.5))=2`
+
+2.2) Function is right not not in equilibrium as it will take few time stamps to reach to the equilibrium mean. 
+
+2.3) Function is going to achieve equilibrim in few more time stamps, if we see the value closely , its kind of osciallting, around 2 only. we will see one value is lower than 2 and other value is greater than 2. So this osciallation will keep on diminishing in the value and after few next time stamps it will achieve the equilrium as can be seen clearly in the plot as well.
+```{r}
+X0<-0
+X<-rep(0,100)
+for( i in 2:100){
+  X[i]<-(3 - (.5)*(X[i-1]))
+ }
+plot(X,type="l",col="red")
+print(X[2:20])
+print(X[4])
+print(mean(X))
+
+
+
+```
+
+## Question:3 
+3.1) 
+`x(t)<- 3 + w(t) + .5(w(t-1))`
+#Simulation as Follows :
+
+```{r}
+library(xts)
+w_t<-rnorm(100,0,1)
+x<-rep(0,100)
+for (i in 2:100){
+  x[i]<-3+w_t[i]+.5*w_t[i-1]
+  
+}
+plot(x,type='l',col='magenta',main="moving average simulation")
+# Another way of doing the simulation in R using Arima.sim
+xc=arima.sim(n=100, list(ma=c(0.7)))
+xc<-(xc+3)
+plot(xc,type="l",col="purple")
+
+```
+
+
+3.2) Name of the function : Moving Average 
+     Function is stationary in mean and `mean of the function would be 3        only ` 
+     
+3.3) Below is the CI for Theoritical and Simulated results :
+& if we observe the CI bands for theoritically and simulated , the band size is almost same i.e .488 but there is a bit of lsight difference in upper and lower bounds of both,which is obvious because simulation values will never be same as theoritical values.
+```{r}
+N=100
+SD_th<-sqrt(1*(1+.5^2))
+mean_th<-3
+CI_th<- 3 + c(-1.96,1.96)*SD_th/(sqrt(N))
+#Simulated :
+CI_sim<- mean(x) + c(-1.96,1.96)*sd(x)/sqrt(N)
+print(CI_th)
+print(CI_sim)
+CI_th[2]-CI[1]
+CI_sim[2]-CI_sim[1]
+
+
+```
+#Question:4 
+4.1) Yes the series is stationary in mean, as we can see most of the time , it lies in the lower region only, its just that at 
+times it jumps to a really high value but soon again it comes back to its mean values.
+
+4.2) 
+a) Fit a model , using auto.arima and then plot the residuals. 
+Those residuals we can see capture the variance.
+
+b)I have done a log transformation, for capturing the variance, as we have seen this is a stationary seres in mean , so this transformated will kind of demean the sereis and we can see the model variance.
+
+4.3) Variance is plotted :
+
+4.4) garch(1,1) is plotted on the time series 
+
+4.5) By estimating the variance volatility, we can observe how much volatile our values can be in the future.
+I think we can forecast the volatility and substract it from our orignal forecast, can give us better predications for future.
+```{r}
+
+library(readr)
+library(tseries)
+library(forecast)
+ERCOT_LZ_North_January_2014<-read_csv("C:/Users/ltyagi.MOSAICINT/Downloads/ERCOT LZ North January 2014.csv")
+nrow(ERCOT_LZ_North_January_2014)
+
+elec_bill <-ts(ERCOT_LZ_North_January_2014$`Settlement Point Price`)
+plot.ts(elec_bill,type="l",col="violet",main="time series plot for electricity")
+# ADF test , just to check Theroitically as well :
+
+adf.test(elec_bill,alternative = "stationary")
+
+## Model Fit and plotting the residuals , capturing the variance , because the error has variance in it.
+
+acf(elec_bill)
+pacf(elec_bill)
+model<-auto.arima(elec_bill,ic="aic")
+plot(model$residual,type="l",col="magenta",main="model of residual capturing variance")
+adf.test(model$residuals,alternative = "stationary")
+
+### Another way i think log transformation will give us the variance model and we can take it up from here to model the variance 
+plot.ts(log(elec_bill+1),type="l",col="purple",main="model capturing Variance")
+
+
+
+``` 
+
+```{r}
+#model$residuals
+ele_bill_garch <-garch(model$residuals, order=c(1,1), grad="numerical", trace=FALSE)
+confint(ele_bill_garch)
+ele_bill_garch$coef
+
+
+```
+
+```{r}
+
+
+```
+
