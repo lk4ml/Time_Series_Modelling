@@ -1,0 +1,64 @@
+---
+title: "Volatility Modelling in Apple Stocks "
+output: html_notebook
+---
+
+## *This paper is an attmept to understand the volatility in the stock prices for apple* : 
+
+## First Things First , Lets get a data set for apple since 2006
+```{r}
+
+library(tseries)
+library(zoo)
+library(xts)
+library(ggfortify)
+appl_stock<-read.csv("C:/Users/ltyagi.MOSAICINT/Downloads/AAPL (6).csv")
+appl_stock
+appl_stock1<-appl_stock[c(1,5)]
+appl_stock1
+ap<-ts(appl_stock1$Close,start=c(2011,11,20),frequency = 365)
+
+autoplot(ap,ts.colour='blue')+
+  ggtitle("Stock Data for Apple since 2006 ")
+
+
+```
+# Lets observe the retruns on the stock , on daily basis : 
+
+
+```{r}
+library(ggplot2)
+library(ggfortify)
+library(tseries)
+autoplot( (diff(ap)/ap[-length(ap)]),ts.colour = 'dodgerblue4')+
+  ggtitle("log returns for apple")+ 
+    ylab("log returns")+xlab("Year")
+```
+
+
+## There can be easily seen the period of volatility in Apple stocks in time intervals, 
+so under these assumptions we need to fit a grach model on the same and analyse the volatility .
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
