@@ -1,6 +1,8 @@
 ---
-title: "Volatility Modelling in Apple Stocks "
-output: html_notebook
+title: 'Volatility Modelling in Apple Stocks '
+output:
+  pdf_document: default
+  html_notebook: default
 ---
 
 ## *This paper is an attmept to understand the volatility in the stock prices for apple* : 
@@ -14,10 +16,8 @@ library(xts)
 library(ggfortify)
 appl_stock<-read.csv("C:/Users/ltyagi.MOSAICINT/Downloads/AAPL (6).csv")
 appl_stock
-appl_stock1<-appl_stock[c(1,5)]
+appl_stock1<-appl_stock[c("Date","Adj.Close")]
 appl_stock1
-ap<-ts(appl_stock1$Close,start=c(2011,11,20),frequency = 365)
-
 autoplot(ap,ts.colour='blue')+
   ggtitle("Stock Data for Apple since 2006 ")
 
@@ -30,6 +30,7 @@ autoplot(ap,ts.colour='blue')+
 library(ggplot2)
 library(ggfortify)
 library(tseries)
+ap_return<-diff(ap)/ap[-length(ap)]
 autoplot( (diff(ap)/ap[-length(ap)]),ts.colour = 'dodgerblue4')+
   ggtitle("log returns for apple")+ 
     ylab("log returns")+xlab("Year")
@@ -39,26 +40,61 @@ autoplot( (diff(ap)/ap[-length(ap)]),ts.colour = 'dodgerblue4')+
 ## There can be easily seen the period of volatility in Apple stocks in time intervals, 
 so under these assumptions we need to fit a grach model on the same and analyse the volatility .
 ```{r}
+library(ggfortify)
+autoplot(stats::acf(ap_return), plot = FALSE)
+autoplot(stats::acf(ap_return^2), plot = FALSE)
 
 ```
 
 ```{r}
+library(knitr) 
+Table_For_GARCH_AIC <- function(data,P,Q){
+  table <- matrix(NA,(P),(Q))
+  for(p in 1:P) {
+    for(q in 1:Q) {
+      temp.fit = garch(x = data, order = c(p,q), grad = "numerical", trace = FALSE)
+      table[p,q] <- 2*length(temp.fit$coef) - 2*as.numeric(logLik(temp.fit))
+    }
+  }
+  dimnames(table) <- list(paste("<b> p",1:P, "</b>", sep=""),paste("q",1:Q,sep=""))
+  table
+}
+
+apple_aic_table <- Table_For_GARCH_AIC(ap_return,5,5)
+apple_aic_table
+
+kable(apple_aic_table,digits=2)
 
 ```
 
 ```{r}
+garch1<-garch(ap_return,order=c(1,1),trace=FALSE)
+garch2<-garch(ap_return,order=c(3,5),trace=FALSE)
+# plot(garch1)
+summary(garch1)
+confint(garch1)
+summary(garch2)
+confint(garch2)
+
+```
+
+
+
+
+
+```{r}
+
+plot(sqrt(252) * garch1$fitted.values[, 1], type="l")
 
 ```
 
 ```{r}
+plot(appl_stock1$Date[2:2769],ap_return,ylab = 'Returns', xlab = 'Date',type='b', main ='Garch(1,1)',lwd=1)
 
 ```
 
 ```{r}
-
-```
-
-```{r}
+class(appl_stock1$Date[2:2769])
 
 ```
 

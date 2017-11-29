@@ -1,0 +1,165 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+
+```{r}
+library(readr)
+apple <- read_csv("C:/Users/ltyagi.MOSAICINT/Downloads/AAPL (6).csv", 
+    col_types = cols(`Adj Close` = col_number(), 
+        Date = col_date(format = "%m/%d/%Y")))
+head(apple)
+
+
+```
+
+```{r}
+stock<-apple[c("Date","Adj Close")]
+head(stock)
+stock["return"]<-c(diff(log(stock$`Adj Close`)),NA)
+#plot(stock$Date,stock$`Adj Close`,type='l',col='dodgerblue2')
+plot(stock$Date,stock$return,type='l',col='dodgerblue4')
+
+```
+
+##Put the best choosen arima models : 
+
+```{r}
+
+library(tseries)
+ts_stock<-ts(stock$`Adj Close`,start=c(2006,11,20),frequency = 365)
+ts_stock
+arima.fit<-arima(ts_stock)
+
+library(forecast)
+arima.fit<-auto.arima(ts_stock)
+summary(arima.fit)
+plot(arima.fit$residuals)
+acf(arima.fit$residuals)
+pacf(arima.fit$residuals)
+```
+
+```{r}
+library(knitr) 
+library(fGarch)
+library(tseries)
+Table_For_GARCH_AIC <- function(data,P,Q){
+  table <- matrix(NA,(P),(Q))
+  for(p in 1:P) {
+    for(q in 1:Q) {
+      temp.fit = garch(x = data, order = c(p,q), grad = "numerical", trace = FALSE)
+      table[p,q] <- 2*length(temp.fit$coef) - 2*as.numeric(logLik(temp.fit))
+    }
+  }
+  dimnames(table) <- list(paste("<b> p",1:P, "</b>", sep=""),paste("q",1:Q,sep=""))
+  table
+}
+
+apple_aic_table <- Table_For_GARCH_AIC(stock$return[1:2768],5,5)
+
+
+
+```
+
+```{r}
+apple_aic_table
+
+```
+
+```{r}
+
+library(fGarch)
+fit.garch <- garchFit(~garch(3,5),stock$return[1:2768], trace = F)
+u = fit.garch@sigma.t
+summary(fit.garch)
+
+```
+
+# Plotting it now : 
+```{r}
+plot(stock$Date[1:2768],stock$return[1:2768],ylab = 'Returns', xlab = 'Date', 
+     type='l', main ='Garch(3,5)')
+lines(stock$Date[1:2768], -2*u, lty=2, col='red', lwd = 1.5)
+lines(stock$Date[1:2768], 2*u, lty=2, col='red', lwd = 1.5)
+
+
+```
+## Lets try now Garch(1,1)
+
+```{r}
+fit.garch <- garchFit(~garch(1,1),stock$return[1:2768], trace = F)
+u = fit.garch@sigma.t
+plot(stock$Date[1:2768],stock$return[1:2768],ylab = 'Returns', xlab = 'Date', type='l', main ='Garch(1,1)')
+lines(stock$Date[1:2768], -2*u, lty=2, col='red', lwd = 1.5)
+lines(stock$Date[1:2768], 2*u, lty=2, col='red', lwd = 1.5)
+
+```
+
+```{r}
+
+fit.garch1 <- garchFit(~garch(1,1),stock$return[1:2768], trace = F)
+garch_new<-garch(stock$return[1:2768],order=c(1,1),trace=FALSE)
+coef(garch_new)
+p<-garch_new$fitted.values
+plot(stock$Date[1:2768],stock$return[1:2768],ylab = 'Returns', xlab = 'Date', type='l', main ='Garch(1,1)')
+lines(stock$Date[1:2768], -2*p[,1], lty=2, col='magenta',lwd = 1.5)
+lines(stock$Date[1:2768], 2*p[,1], lty=2, col='magenta', lwd = 1.5)
+
+```
+
+```{r}
+
+plot(stock$Date[1:2768],stock$return[1:2768],ylab = 'Returns', xlab = 'Date', type='l', main ='Garch(1,1)')
+lines(stock$Date[1:2768], -2*u, lty=2, col='red', lwd = 1.5)
+lines(stock$Date[1:2768], 2*u, lty=2, col='red', lwd = 1.5)
+
+
+```
+
+```{r}
+
+a0=coef(garch_new)[1]
+a1=coef(garch_new)[2]
+b1=coef(garch_new)[3]
+
+```
+
+
+
+
+```{r}
+pred.u = c()
+pred.y = c()
+
+u.pre =u[(length(u)-20)]
+y.pre = stock$return[1:2768][(length(stock$return[1:2768])-20)]
+for(ahead in 1:40){
+  cur.u = sqrt(a0+a1*y.pre^2+b1*u.pre^2)
+  cur.y = rnorm(1, 0, cur.u)
+  pred.u = c(pred.u,cur.u)
+  pred.y = c(pred.y,cur.y)
+  u.pre = cur.u
+  y.pre = cur.y
+}
+
+```
+
+
+
+```{r}
+
+predict(fit.garch1,n.ahead=50,trace=FALSE,plot=TRUE)
+
+```
+
+
+## Now do the same analysis for Google as well ; 
+
+```{r}
+
+
+```
+
+
